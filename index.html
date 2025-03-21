@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YT Video Downloader</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        @keyframes rotate {
+            0% { transform: translateY(100%); opacity: 0; }
+            5% { transform: translateY(0); opacity: 1; }
+            45% { transform: translateY(0); opacity: 1; }
+            50% { transform: translateY(-100%); opacity: 0; }
+            100% { transform: translateY(-100%); opacity: 0; }
+        }
+
+        .rotating-text {
+            height: 1.5em;
+            overflow: hidden;
+        }
+
+        .rotating-text span {
+            display: block;
+            animation: rotate 8s infinite;
+            opacity: 0;
+        }
+
+        .rotating-text span:nth-child(2) { animation-delay: 2s; }
+        .rotating-text span:nth-child(3) { animation-delay: 4s; }
+        .rotating-text span:nth-child(4) { animation-delay: 6s; }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .react-logo {
+            animation: spin 20s linear infinite;
+            filter: drop-shadow(0 0 0.5rem rgba(97, 218, 251, 0.5));
+        }
+
+        .download-btn {
+            background: linear-gradient(135deg, #4F46E5 0%, #3B82F6 100%);
+            transition: all 0.3s ease;
+        }
+
+        .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+
+        .progress-bar {
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen font-['Inter']">
+    <div class="container mx-auto px-4 py-12">
+        <!-- Header with React Logo -->
+        <div class="flex flex-col items-center mb-16">
+            <div class="w-32 h-32 mb-8 p-4 bg-white rounded-full shadow-lg">
+                <svg class="react-logo w-full h-full" viewBox="-11.5 -10.23174 23 20.46348">
+                    <circle cx="0" cy="0" r="2.05" fill="#61dafb"/>
+                    <g stroke="#61dafb" stroke-width="1" fill="none">
+                        <ellipse rx="11" ry="4.2"/>
+                        <ellipse rx="11" ry="4.2" transform="rotate(60)"/>
+                        <ellipse rx="11" ry="4.2" transform="rotate(120)"/>
+                    </g>
+                </svg>
+            </div>
+            <h1 class="text-4xl font-bold text-gray-800 mb-4 text-center">YT Video Downloader</h1>
+            <div class="rotating-text relative text-xl text-blue-600 font-medium text-center">
+                <span>Download Videos Fast ⚡</span>
+                <span>High Quality Downloads 🎥</span>
+                <span>Easy to Use 🚀</span>
+                <span>Free Forever ✨</span>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="max-w-2xl mx-auto">
+            <div class="bg-white rounded-2xl shadow-xl p-8 mb-8">
+                <div class="mb-8">
+                    <label class="block text-gray-700 text-sm font-semibold mb-3" for="url">
+                        YouTube URL
+                    </label>
+                    <div class="flex gap-3">
+                        <input type="text" id="url" 
+                            class="flex-1 px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder="Paste YouTube URL here...">
+                        <button onclick="downloadVideo()" 
+                            class="download-btn text-white px-8 py-3 rounded-xl font-medium">
+                            Download
+                        </button>
+                    </div>
+                    <p id="error" class="text-red-500 text-sm mt-3 hidden">Please enter a valid YouTube URL</p>
+                </div>
+
+                <div class="mb-8">
+                    <label class="block text-gray-700 text-sm font-semibold mb-3">
+                        Video Quality
+                    </label>
+                    <select id="quality" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white">
+                        <option value="1080p">1080p HD</option>
+                        <option value="720p">720p HD</option>
+                        <option value="480p">480p</option>
+                        <option value="360p">360p</option>
+                    </select>
+                </div>
+
+                <!-- Download Progress -->
+                <div id="progress" class="hidden">
+                    <div class="w-full bg-gray-100 rounded-full h-3 mb-2">
+                        <div class="progress-bar bg-gradient-to-r from-blue-500 to-blue-600 h-3 rounded-full" style="width: 0%"></div>
+                    </div>
+                    <p class="text-sm text-gray-600">Processing download... Please wait.</p>
+                </div>
+            </div>
+
+            <!-- Download History -->
+            <div class="bg-white rounded-2xl shadow-xl p-8">
+                <h3 class="text-lg font-semibold text-gray-800 mb-6 flex items-center">
+                    <i class="fas fa-history text-blue-500 mr-3"></i>
+                    Download History
+                </h3>
+                <div id="history" class="space-y-4">
+                    <!-- History items will be added here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function downloadVideo() {
+            const urlInput = document.getElementById('url');
+            const qualitySelect = document.getElementById('quality');
+            const errorText = document.getElementById('error');
+            const progressBar = document.getElementById('progress');
+            const history = document.getElementById('history');
+
+            // Simple YouTube URL validation
+            const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+$/;
+            
+            if (!youtubeRegex.test(urlInput.value)) {
+                errorText.classList.remove('hidden');
+                return;
+            }
+
+            errorText.classList.add('hidden');
+            progressBar.classList.remove('hidden');
+
+            try {
+                // Make API call to backend
+                const response = await fetch('http://localhost:5000/download', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        url: urlInput.value,
+                        quality: qualitySelect.value
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Add to history
+                    const historyItem = document.createElement('div');
+                    historyItem.className = 'flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors';
+                    historyItem.innerHTML = `
+                        <div class="flex items-center">
+                            <i class="fas fa-video text-blue-500 mr-3"></i>
+                            <div>
+                                <div class="text-sm font-medium text-gray-800">${data.title}</div>
+                                <div class="text-xs text-gray-500">Downloaded just now</div>
+                            </div>
+                        </div>
+                        <a href="http://localhost:5000/video/${data.filename}" 
+                           class="text-blue-500 hover:text-blue-600" 
+                           download>
+                            <i class="fas fa-download"></i>
+                        </a>
+                    `;
+                    history.insertBefore(historyItem, history.firstChild);
+                    
+                    // Clear input and hide progress
+                    urlInput.value = '';
+                    progressBar.classList.add('hidden');
+                } else {
+                    throw new Error(data.message);
+                }
+            } catch (error) {
+                errorText.textContent = `Error: ${error.message}`;
+                errorText.classList.remove('hidden');
+                progressBar.classList.add('hidden');
+            }
+        }
+    </script>
+</body>
+</html>
